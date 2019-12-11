@@ -1,33 +1,42 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+package util;
 
-public class Day5 {
+import java.util.*;
 
+
+public class IntCodeComputer {
     private static final Scanner in = new Scanner(System.in);
 
-    private static final Integer[] operationsParamOne = {1,2,3,4,5,6,7,8};
-    private static final Integer[] operationsParamTwo = {1,2,5,6,7,8};
-    private static final Integer[] operationsParamThree = {1,2,7,8};
+    public static final int INPUT_MODE_CONSOLE = 0;
+    public static final int INPUT_MODE_QUEUE = 1;
 
-    private static final List<Integer> operationHasParamOne = new ArrayList<>(Arrays.asList(operationsParamOne));
-    private static final List<Integer> operationHasParamTwo = new ArrayList<>(Arrays.asList(operationsParamTwo));
-    private static final List<Integer> operationHasParamThree = new ArrayList<>(Arrays.asList(operationsParamThree));
+    public static final int OUTPUT_MODE_CONSOLE = 0;
+    public static final int OUTPUT_MODE_QUEUE = 1;
 
-    public static void main(String[] args) {
+    private int inputMode = INPUT_MODE_CONSOLE;
+    private int outputMode = OUTPUT_MODE_CONSOLE;
+
+    private Queue<Integer> input = new LinkedList<>();
+    private Queue<Integer> output = new LinkedList<>();
+
+    private final Integer[] operationsParamOne = {1, 2, 3, 4, 5, 6, 7, 8};
+    private final Integer[] operationsParamTwo = {1, 2, 5, 6, 7, 8};
+    private final Integer[] operationsParamThree = {1, 2, 7, 8};
+
+    private final List<Integer> operationHasParamOne = new ArrayList<>(Arrays.asList(operationsParamOne));
+    private final List<Integer> operationHasParamTwo = new ArrayList<>(Arrays.asList(operationsParamTwo));
+    private final List<Integer> operationHasParamThree = new ArrayList<>(Arrays.asList(operationsParamThree));
+
+
+    public int[] readIntCodeProgram() {
         String[] inputs = in.nextLine().split(",");
         int[] intCodeProgram = new int[inputs.length];
         for (int i = 0; i < inputs.length; i++)
             intCodeProgram[i] = Integer.parseInt(inputs[i]);
 
-        //Provide 1 to the input of the program to solve part 1
-        //Provide 5 to the input of the program to solve part 2
-        runIntCode(intCodeProgram);
+        return intCodeProgram;
     }
 
-
-    public static void runIntCode(int[] intCodeProgram) {
+    public void runIntCode(int[] intCodeProgram) {
         int pointer = 0;
         int instruction;
         int param1 = -1;
@@ -71,13 +80,32 @@ public class Day5 {
                     break;
 
                 case 3:
-                    int newValue = in.nextInt();
+                    int newValue;
+                    switch (this.inputMode) {
+                        case INPUT_MODE_CONSOLE:
+                            System.out.println("Expecting Input for OpCode 3: ");
+                            newValue = in.nextInt();
+                            break;
+                        case INPUT_MODE_QUEUE:
+                            newValue = this.getInput();
+                            break;
+                        default:
+                            newValue = Integer.MIN_VALUE;
+                    }
+
                     intCodeProgram[param1] = newValue;
                     pointer += 2;
                     break;
 
                 case 4:
-                    System.out.println(param1);
+                    switch(this.outputMode) {
+                        case OUTPUT_MODE_CONSOLE:
+                            System.out.println(param1);
+                            break;
+                        case OUTPUT_MODE_QUEUE:
+                            this.setOutput(param1);
+                            break;
+                    }
                     pointer += 2;
                     break;
 
@@ -85,7 +113,7 @@ public class Day5 {
                     if (param1 != 0)
                         pointer = param2;
                     else
-                     pointer += 3;
+                        pointer += 3;
                     break;
 
                 case 6:
@@ -111,10 +139,38 @@ public class Day5 {
                     pointer += 4;
                     break;
                 default:
-                    System.out.println("Unsupported OP code: "+opCode);
+                    System.out.println("Unsupported OP code: " + opCode);
                     return;
             }
         }
     }
-}
 
+    public void setInput(int input) {
+        this.input.add(input);
+    }
+
+    public int getInput() {
+        if (this.input.size() != 0)
+            return this.input.remove();
+        return Integer.MIN_VALUE;
+    }
+
+    public void setOutput(int output) {
+        this.output.add(output);
+    }
+
+    public int getOutput() {
+        if (this.output.size() != 0)
+            return this.output.remove();
+        return Integer.MIN_VALUE;
+    }
+
+    public void setInputMode(int inputMode) {
+        this.inputMode = inputMode;
+    }
+
+    public void setOutputMode(int outputMode) {
+        this.outputMode = outputMode;
+    }
+
+}

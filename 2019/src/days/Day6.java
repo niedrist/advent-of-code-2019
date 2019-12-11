@@ -1,3 +1,4 @@
+package days;
 
 import java.util.*;
 
@@ -27,7 +28,6 @@ public class Day6 {
                 break;
         }
         System.out.println(totalPathLength);
-
     }
 
     public static ArrayList<String> getPathTo(String objectFrom, String objectTo) {
