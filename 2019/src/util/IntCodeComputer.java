@@ -15,10 +15,14 @@ public class IntCodeComputer {
     private int inputMode = INPUT_MODE_CONSOLE;
     private int outputMode = OUTPUT_MODE_CONSOLE;
 
+    private final int PARAMETER_MODE_POSITION = 0;
+    private final int PARAMETER_MODE_IMMEDIATE = 1;
+    private final int PARAMETER_MODE_RELATIVE = 2;
+
     private Queue<Integer> input = new LinkedList<>();
     private Queue<Integer> output = new LinkedList<>();
 
-    private final Integer[] operationsParamOne = {1, 2, 3, 4, 5, 6, 7, 8};
+    private final Integer[] operationsParamOne = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     private final Integer[] operationsParamTwo = {1, 2, 5, 6, 7, 8};
     private final Integer[] operationsParamThree = {1, 2, 7, 8};
 
@@ -29,6 +33,7 @@ public class IntCodeComputer {
     public int pointer = 0;
     private int[] intCodeProgram = null;
     private boolean isFinished = false;
+    private int relativeBase = 0;
 
 
     public static int[] readIntCodeProgram() {
@@ -61,28 +66,25 @@ public class IntCodeComputer {
         if (instruction != 99) {
             int opCode = instruction % 10;
             instruction /= 100;
-            boolean positionModeParam1 = instruction % 10 == 0;
+            int modeParam1 = instruction % 10;
             instruction /= 10;
-            boolean positionModeParam2 = instruction % 10 == 0;
+            int modeParam2 = instruction % 10;
 
-            // Determine Parameter 1
-            if (operationHasParamOne.contains(opCode)) {
-                param1 = this.intCodeProgram[this.pointer + 1];
-                if (opCode != 3)
-                    if (positionModeParam1)
-                        param1 = this.intCodeProgram[param1];
-            }
-            //Determine Parameter 2
-            if (operationHasParamTwo.contains(opCode)) {
-                param2 = this.intCodeProgram[this.pointer + 2];
-                if (positionModeParam2)
-                    param2 = this.intCodeProgram[param2];
-            }
+            int modeParam3 = PARAMETER_MODE_IMMEDIATE; //always immeidate mode because always write-only
 
-            //Determine Parameter 3
-            if (operationHasParamThree.contains(opCode)) {
-                param3 = this.intCodeProgram[this.pointer + 3];
-            }
+            // Param 1 is write-only for Opcode 3
+            if (opCode == 3)
+                modeParam1 = PARAMETER_MODE_IMMEDIATE;
+
+            if (operationHasParamOne.contains(opCode))
+                param1 = determineParam(modeParam1, 1);
+            
+            if (operationHasParamTwo.contains(opCode)) 
+                param2 = determineParam(modeParam2, 2);
+
+            if (operationHasParamThree.contains(opCode)) 
+                param3 = determineParam(modeParam3, 3);
+            
 
             switch (opCode) {
                 case 1:
@@ -115,6 +117,10 @@ public class IntCodeComputer {
 
                 case 8:
                     opCode8(param1, param2, param3);
+                    break;
+
+                case 9:
+                    opCode9(param1);
                     break;
 
                 default:
@@ -195,6 +201,31 @@ public class IntCodeComputer {
         this.pointer += 4;
     }
 
+    private void opCode9(int relativeBaseChange) {
+        this.relativeBase += relativeBaseChange;
+        this.pointer += 2;
+    }
+
+    private int determineParam(int modeParam, int numberParameter) {
+        int param;
+        switch(modeParam) {
+            case PARAMETER_MODE_POSITION:
+                param = this.intCodeProgram[this.intCodeProgram[this.pointer + numberParameter]];
+                break;
+            case PARAMETER_MODE_IMMEDIATE:
+                param = this.intCodeProgram[this.pointer + numberParameter];
+                break;
+            case PARAMETER_MODE_RELATIVE:
+                param = this.intCodeProgram[this.relativeBase];
+                break;
+            default:
+                System.out.println(modeParam + " " + numberParameter);
+                param = Integer.MIN_VALUE;
+                break;
+        }
+        return param;
+    }
+
     public void setInput(int input) {
         this.input.add(input);
     }
@@ -221,12 +252,6 @@ public class IntCodeComputer {
 
     public void setOutputMode(int outputMode) {
         this.outputMode = outputMode;
-    }
-
-    public void setIntCodeProgram(int[] intCodeProgram) {
-        this.intCodeProgram = intCodeProgram;
-        this.pointer = 0;
-        this.isFinished = false;
     }
 
     public boolean isFinished() {
