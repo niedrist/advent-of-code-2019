@@ -19,39 +19,47 @@ public class IntCodeComputer {
     private final int PARAMETER_MODE_IMMEDIATE = 1;
     private final int PARAMETER_MODE_RELATIVE = 2;
 
-    private Queue<Integer> input = new LinkedList<>();
-    private Queue<Integer> output = new LinkedList<>();
+    private Queue<Long> input = new LinkedList<>();
+    private Queue<Long> output = new LinkedList<>();
 
-    private final Integer[] operationsParamOne = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-    private final Integer[] operationsParamTwo = {1, 2, 5, 6, 7, 8};
-    private final Integer[] operationsParamThree = {1, 2, 7, 8};
+    private final List<Integer> operationHasParamOne = 
+        new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    private final List<Integer> operationHasParamTwo = 
+        new ArrayList<>(Arrays.asList(1, 2, 5, 6, 7, 8));
+    private final List<Integer> operationHasParamThree = 
+        new ArrayList<>(Arrays.asList(1, 2, 7, 8));
 
-    private final List<Integer> operationHasParamOne = new ArrayList<>(Arrays.asList(operationsParamOne));
-    private final List<Integer> operationHasParamTwo = new ArrayList<>(Arrays.asList(operationsParamTwo));
-    private final List<Integer> operationHasParamThree = new ArrayList<>(Arrays.asList(operationsParamThree));
+    private HashMap<Integer, List<Integer>> modifyingParameterOperations = new HashMap<>();
 
-    public int pointer = 0;
-    private int[] intCodeProgram = null;
+    private int pointer = 0;
+    private List<Long> intCodeProgram;
     private boolean isFinished = false;
     private int relativeBase = 0;
+    private int lengthProgram = 0;
+
+    public IntCodeComputer(Long[] intCodeProgram) {
+        this.intCodeProgram = new ArrayList<Long>(Arrays.asList(intCodeProgram));
+        this.lengthProgram = intCodeProgram.length;
+
+        // Each parameter for each opCode that modifies the intCodeProgram
+        this.modifyingParameterOperations.put(1, Arrays.asList(3));
+        this.modifyingParameterOperations.put(2, Arrays.asList());
+        this.modifyingParameterOperations.put(3, Arrays.asList(1,2,7,8));
+    }
 
 
-    public static int[] readIntCodeProgram() {
+    public static Long[] readIntCodeProgram() {
         String[] inputs = in.nextLine().split(",");
 
-        int[] intCodeProgram = new int[inputs.length];
+        Long[] intCodeProgram = new Long[inputs.length];
         for (int i = 0; i < inputs.length; i++)
-            intCodeProgram[i] = Integer.parseInt(inputs[i]);
+            intCodeProgram[i] = Long.parseLong(inputs[i]);
 
         return intCodeProgram;
     }
 
     public void runIntCode() {
-        if (this.intCodeProgram == null) {
-            System.out.println("No program provided");
-            return;
-        }
-        while ((this.intCodeProgram[this.pointer]) != 99) {
+        while ((this.intCodeProgram.get(this.pointer)) != 99) {
             nextInstruction();
         }
         this.isFinished = true;
@@ -59,44 +67,48 @@ public class IntCodeComputer {
     }
 
     public void nextInstruction() {
-        int param1 = -1;
-        int param2 = -1;
-        int param3 = -1;
-        int instruction = this.intCodeProgram[this.pointer];
+        long param1 = -1;
+        long param2 = -1;
+        long param3 = -1;
+        int instruction = this.intCodeProgram.get(this.pointer).intValue();
         if (instruction != 99) {
             int opCode = instruction % 10;
             instruction /= 100;
             int modeParam1 = instruction % 10;
             instruction /= 10;
             int modeParam2 = instruction % 10;
+            instruction /= 10;
+            int modeParam3 = instruction % 10;
 
-            int modeParam3 = PARAMETER_MODE_IMMEDIATE; //always immeidate mode because always write-only
-
+            
             // Param 1 is write-only for Opcode 3
-            if (opCode == 3)
-                modeParam1 = PARAMETER_MODE_IMMEDIATE;
-
+            //if (opCode == 3)
+            //    modeParam1 = PARAMETER_MODE_IMMEDIATE;
+                
             if (operationHasParamOne.contains(opCode))
-                param1 = determineParam(modeParam1, 1);
+                param1 = determineParam(modeParam1, 1, opCode);
             
             if (operationHasParamTwo.contains(opCode)) 
-                param2 = determineParam(modeParam2, 2);
+                param2 = determineParam(modeParam2, 2, opCode);
 
             if (operationHasParamThree.contains(opCode)) 
-                param3 = determineParam(modeParam3, 3);
+                param3 = determineParam(modeParam3, 3, opCode);
+
+            //System.out.println("Pointer: "+this.pointer+", RelBase: "
+            //+this.relativeBase+", \tOP: "+opCode+", "+param1+"("+modeParam1+")"+":"+param2+":"+param3);
             
 
             switch (opCode) {
                 case 1:
-                    opCode1(param1, param2, param3);
+                    opCode1(param1, param2, (int) param3);
                     break;
 
                 case 2:
-                    opCode2(param1, param2, param3);
+                    opCode2(param1, param2, (int) param3);
                     break;
 
                 case 3:
-                    opCode3(param1);
+                    opCode3((int) param1);
                     break;
 
                 case 4:
@@ -104,19 +116,19 @@ public class IntCodeComputer {
                     break;
 
                 case 5:
-                    opCode5(param1, param2);
+                    opCode5(param1, (int) param2);
                     break;
 
                 case 6:
-                    opCode6(param1, param2);
+                    opCode6(param1, (int) param2);
                     break;
 
                 case 7:
-                    opCode7(param1, param2, param3);
+                    opCode7(param1, param2, (int) param3);
                     break;
 
                 case 8:
-                    opCode8(param1, param2, param3);
+                    opCode8(param1, param2, (int) param3);
                     break;
 
                 case 9:
@@ -132,22 +144,22 @@ public class IntCodeComputer {
         }
     }
 
-    private void opCode1(int firstToAdd, int secondToAdd, int posToModify) {
-        this.intCodeProgram[posToModify] = firstToAdd + secondToAdd;
+    private void opCode1(long firstToAdd, long secondToAdd, int posToModify) {
+        this.set(posToModify, (firstToAdd + secondToAdd));
         this.pointer += 4;
     }
 
-    private void opCode2(int firstToMul, int secondToMul, int posToModify) {
-        this.intCodeProgram[posToModify] = firstToMul * secondToMul;
+    private void opCode2(long firstToMul, long secondToMul, int posToModify) {
+        this.set(posToModify, (firstToMul * secondToMul));
         this.pointer += 4;
     }
 
     private void opCode3(int posToModify) {
-        int newValue;
+        long newValue;
         switch (this.inputMode) {
             case INPUT_MODE_CONSOLE:
                 System.out.println("Expecting Input for OpCode 3: ");
-                newValue = in.nextInt();
+                newValue = in.nextLong();
                 break;
             case INPUT_MODE_QUEUE:
                 newValue = this.getInput();
@@ -156,11 +168,11 @@ public class IntCodeComputer {
                 newValue = Integer.MIN_VALUE;
         }
 
-        this.intCodeProgram[posToModify] = newValue;
+        this.set(posToModify, newValue);
         this.pointer += 2;
     }
 
-    private void opCode4(int valueToPrint) {
+    private void opCode4(Long valueToPrint) {
         switch(this.outputMode) {
             case OUTPUT_MODE_CONSOLE:
                 System.out.println(valueToPrint);
@@ -172,78 +184,100 @@ public class IntCodeComputer {
         this.pointer += 2;
     }
 
-    private void opCode5(int valToCheck, int pointerPos) {
-        if (valToCheck != 0)
+    private void opCode5(long valToCheck, int pointerPos) {
+        if (valToCheck != 0L)
             this.pointer = pointerPos;
         else
             this.pointer += 3;
     }
-    private void opCode6(int valToCheck, int pointerPos) {
-        if (valToCheck == 0)
+    private void opCode6(long valToCheck, int pointerPos) {
+        if (valToCheck == 0L)
             this.pointer = pointerPos;
         else
             this.pointer += 3;
     }
 
-    private void opCode7(int firstToCheck, int secondToCheck, int posToModify) {
+    private void opCode7(long firstToCheck, long secondToCheck, int posToModify) {
         if (firstToCheck < secondToCheck)
-            this.intCodeProgram[posToModify] = 1;
+            this.set(posToModify, 1L);
         else
-            this.intCodeProgram[posToModify] = 0;
+            this.set(posToModify, 0L);
         this.pointer += 4;
     }
 
-    private void opCode8(int firstToCheck, int secondToCheck, int posToModify) {
+    private void opCode8(long firstToCheck, long secondToCheck, int posToModify) {
         if (firstToCheck == secondToCheck)
-            this.intCodeProgram[posToModify] = 1;
+            this.set(posToModify, 1L);
         else
-            this.intCodeProgram[posToModify] = 0;
+            this.set(posToModify, 0L);
         this.pointer += 4;
     }
 
-    private void opCode9(int relativeBaseChange) {
+    private void opCode9(long relativeBaseChange) {
         this.relativeBase += relativeBaseChange;
         this.pointer += 2;
     }
 
-    private int determineParam(int modeParam, int numberParameter) {
-        int param;
+    private long determineParam(int modeParam, int numberParameter, int opCode) {
+        long param;
         switch(modeParam) {
             case PARAMETER_MODE_POSITION:
-                param = this.intCodeProgram[this.intCodeProgram[this.pointer + numberParameter]];
+                param = this.get(this.pointer + numberParameter);
+                if (!this.modifyingParameterOperations.get(numberParameter).contains(opCode))
+                    param = this.get((int) param);
                 break;
             case PARAMETER_MODE_IMMEDIATE:
-                param = this.intCodeProgram[this.pointer + numberParameter];
+                param = this.get(this.pointer + numberParameter);
                 break;
             case PARAMETER_MODE_RELATIVE:
-                param = this.intCodeProgram[this.relativeBase];
+                param = this.get(this.pointer + numberParameter);
+                if (!this.modifyingParameterOperations.get(numberParameter).contains(opCode))
+                    param = this.get(this.relativeBase + (int) param);
+                else 
+                    param = this.relativeBase + param;
                 break;
             default:
                 System.out.println(modeParam + " " + numberParameter);
-                param = Integer.MIN_VALUE;
+                param = Long.MIN_VALUE;
                 break;
         }
         return param;
     }
 
-    public void setInput(int input) {
+    public void set(int posToModify, long value) {
+        this.extendIntCodeProgram(posToModify);
+        this.intCodeProgram.set(posToModify, value);
+    }
+
+    public Long get(int index) {
+        this.extendIntCodeProgram(index);
+        return this.intCodeProgram.get(index);
+    }
+
+    private void extendIntCodeProgram(int index) {
+        if (this.lengthProgram < index) 
+            for (int i = this.lengthProgram; i <= index; i++)
+                this.intCodeProgram.add(0L);
+    }
+
+    public void setInput(long input) {
         this.input.add(input);
     }
 
-    public int getInput() {
+    public long getInput() {
         if (this.input.size() != 0)
             return this.input.remove();
-        return Integer.MIN_VALUE;
+        return Long.MIN_VALUE;
     }
 
-    public void setOutput(int output) {
+    public void setOutput(long output) {
         this.output.add(output);
     }
 
-    public int getOutput() {
+    public long getOutput() {
         if (this.output.size() != 0)
             return this.output.remove();
-        return Integer.MIN_VALUE;
+        return Long.MIN_VALUE;
     }
 
     public void setInputMode(int inputMode) {
@@ -257,4 +291,6 @@ public class IntCodeComputer {
     public boolean isFinished() {
         return isFinished;
     }
+
+    private IntCodeComputer() {} //keep standard constructor unaccessable
 }
