@@ -35,11 +35,9 @@ public class IntCodeComputer {
     private List<Long> intCodeProgram;
     private boolean isFinished = false;
     private int relativeBase = 0;
-    private int lengthProgram = 0;
 
     public IntCodeComputer(Long[] intCodeProgram) {
         this.intCodeProgram = new ArrayList<Long>(Arrays.asList(intCodeProgram));
-        this.lengthProgram = intCodeProgram.length;
 
         // Each parameter for each opCode that modifies the intCodeProgram
         this.modifyingParameterOperations.put(1, Arrays.asList(3));
@@ -255,8 +253,8 @@ public class IntCodeComputer {
     }
 
     private void extendIntCodeProgram(int index) {
-        if (this.lengthProgram < index) 
-            for (int i = this.lengthProgram; i <= index; i++)
+        if (this.intCodeProgram.size() < index) 
+            for (int i = this.intCodeProgram.size(); i <= index; i++)
                 this.intCodeProgram.add(0L);
     }
 
