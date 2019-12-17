@@ -61,7 +61,6 @@ public class IntCodeComputer {
             nextInstruction();
         }
         this.isFinished = true;
-
     }
 
     public void nextInstruction() {
@@ -77,11 +76,6 @@ public class IntCodeComputer {
             int modeParam2 = instruction % 10;
             instruction /= 10;
             int modeParam3 = instruction % 10;
-
-            
-            // Param 1 is write-only for Opcode 3
-            //if (opCode == 3)
-            //    modeParam1 = PARAMETER_MODE_IMMEDIATE;
                 
             if (operationHasParamOne.contains(opCode))
                 param1 = determineParam(modeParam1, 1, opCode);
@@ -90,11 +84,7 @@ public class IntCodeComputer {
                 param2 = determineParam(modeParam2, 2, opCode);
 
             if (operationHasParamThree.contains(opCode)) 
-                param3 = determineParam(modeParam3, 3, opCode);
-
-            //System.out.println("Pointer: "+this.pointer+", RelBase: "
-            //+this.relativeBase+", \tOP: "+opCode+", "+param1+"("+modeParam1+")"+":"+param2+":"+param3);
-            
+                param3 = determineParam(modeParam3, 3, opCode);            
 
             switch (opCode) {
                 case 1:
@@ -253,7 +243,7 @@ public class IntCodeComputer {
     }
 
     private void extendIntCodeProgram(int index) {
-        if (this.intCodeProgram.size() < index) 
+        if (this.intCodeProgram.size() <= index) 
             for (int i = this.intCodeProgram.size(); i <= index; i++)
                 this.intCodeProgram.add(0L);
     }
