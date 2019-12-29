@@ -1,6 +1,5 @@
 package days;
 
-import java.util.*;
 import util.IntCodeComputer;
 
 public class Day9 {

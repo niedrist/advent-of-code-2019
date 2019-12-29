@@ -47,6 +47,7 @@ public class IntCodeComputer {
 
 
     public static Long[] readIntCodeProgram() {
+        System.out.println("Enter IntCode Program: ");
         String[] inputs = in.nextLine().split(",");
 
         Long[] intCodeProgram = new Long[inputs.length];
@@ -153,9 +154,10 @@ public class IntCodeComputer {
                 newValue = this.getInput();
                 break;
             default:
-                newValue = Integer.MIN_VALUE;
+                newValue = Long.MIN_VALUE;
         }
-
+        if (newValue == Long.MIN_VALUE)
+            System.out.println("No input provided");
         this.set(posToModify, newValue);
         this.pointer += 2;
     }
@@ -230,6 +232,14 @@ public class IntCodeComputer {
                 break;
         }
         return param;
+    }
+
+    public boolean requiresInput() {
+        return (intCodeProgram.get(pointer) % 10 == 3);
+    }
+
+    public boolean hasOutput() {
+        return this.output.size() > 0;
     }
 
     public void set(int posToModify, long value) {
